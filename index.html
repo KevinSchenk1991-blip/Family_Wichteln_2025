@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Wichteln 2025 – Zentral</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+#box { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin:auto; }
+button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
+input { padding: 10px; width: 90%; font-size: 16px; margin-top: 10px; }
+.admin { margin-top: 10px; }
+</style>
+</head>
+<body>
+<div id="box">
+<h2>Wichteln 2025 🎁</h2>
+
+<p>Gib zuerst deinen Namen ein:</p>
+<input id="meinName" type="text" placeholder="Dein Name">
+<button onclick="ziehen()">Wichtel ziehen</button>
+<p id="result"></p>
+
+<hr>
+<h4>Admin-Funktion</h4>
+<input id="adminPass" type="password" placeholder="Admin Passwort" class="admin">
+<button onclick="adminReset()">Liste zurücksetzen</button>
+<p id="adminResult"></p>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyD7iFSO_xONAWWeD0X4SypSFl4X3qJTNCg",
+
+  authDomain: "wichteln-2025-422e6.firebaseapp.com",
+
+  projectId: "wichteln-2025-422e6",
+
+  storageBucket: "wichteln-2025-422e6.firebasestorage.app",
+
+  messagingSenderId: "134269844838",
+
+  appId: "1:134269844838:web:8bf6572ae0641d7f385ca7",
+
+  measurementId: "G-1CPGS9XKD3"
+
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Teilnehmerliste
+let alleNamen = ["Micha","Uta","Fine","Thomas","Dana","Kevin","Jörn","Sigrid"];
+
+// Ziehen
+function ziehen() {
+    let userName = document.getElementById("meinName").value.trim();
+    if(userName === "") { alert("Bitte gib deinen Namen ein!"); return; }
+    if(!alleNamen.includes(userName)) { alert("Dieser Name steht nicht auf der Liste!"); return; }
+
+    // Prüfen, ob der Nutzer schon gezogen hat
+    db.ref("ziehungen/"+userName).get().then(snapshot => {
+        if(snapshot.exists()) {
+            document.getElementById("result").innerText = "Du hast bereits gezogen: " + snapshot.val();
+            return;
+        }
+        // Liste ohne eigenen Namen
+        db.ref("ziehungen").get().then(allSnapshot => {
+            let gezogenNamen = Object.values(allSnapshot.val()||{});
+            let verfuegbareNamen = alleNamen.filter(n => n!==userName && !gezogenNamen.includes(n));
+            if(verfuegbareNamen.length===0){ alert("Keine Namen mehr verfügbar!"); return; }
+            let index = Math.floor(Math.random() * verfuegbareNamen.length);
+            let gezogen = verfuegbareNamen[index];
+            // In Firebase speichern
+            db.ref("ziehungen/"+userName).set(gezogen);
+            document.getElementById("result").innerText = "Du hast gezogen: "+gezogen;
+        });
+    });
+}
+
+// Admin reset
+function adminReset() {
+    let pass = document.getElementById("adminPass").value;
+    if(pass==="Weihnachten"){
+        db.ref("ziehungen").remove();
+        document.getElementById("adminResult").innerText="Liste wurde zurückgesetzt!";
+        document.getElementById("result").innerText="";
+        document.getElementById("adminPass").value="";
+    } else {
+        document.getElementById("adminResult").innerText="Falsches Passwort!";
+    }
+}
+</script>
+</body>
+</html>
